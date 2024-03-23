@@ -15,6 +15,9 @@ dependencies:
   cupertino_icons: ^1.0.2
   http: ^1.2.0
   flutter_svg: ^2.0.9
+  pin_code_fields: ^8.0.1
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -22,11 +25,15 @@ dev_dependencies:
   flutter_lints: ^2.0.0
 
 flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images
+    - assets/images/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
