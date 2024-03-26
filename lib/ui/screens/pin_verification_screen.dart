@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
+import 'package:rest_api_crud_1/ui/controllers/forget_password_controller.dart';
 import 'package:rest_api_crud_1/ui/screens/reset_password_screen.dart';
 import 'package:rest_api_crud_1/ui/widgets/body_background.dart';
 import 'package:rest_api_crud_1/ui/widgets/snack_message.dart';
@@ -16,24 +15,22 @@ class PinVerificationScreen extends StatefulWidget {
 
 class _PinVerificationScreenState extends State<PinVerificationScreen> {
   final TextEditingController _pinCodeTFTEController=TextEditingController();
+  ForgetPasswordController controller=Get.find<ForgetPasswordController>();
   Future<void> getVerifyOTP() async {
-    NetworkResponse response = await NetworkCaller()
-        .getRequest('${Urls.recoveryVerifyOTP}/${widget.email}/${_pinCodeTFTEController.text}');
-    if (response.isSuccess && response.jsonResponse['status']=='success') {
+    bool response=await controller.getVerifyOTP('${widget.email}',_pinCodeTFTEController.text.trim());
+    if (response) {
       if (mounted) {
-        SnackMessage(context, 'Successfully Send OTP');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ResetPasswordScreen(
-                email:widget.email,
-                pin:_pinCodeTFTEController.text
-            ),),);
+        SnackMessage(context,controller.Message);
+        Get.to(ResetPasswordScreen(
+            email: widget.email,
+            pin: _pinCodeTFTEController.text
+        ));
       }
-    }
-    else{
-      if(mounted){
-        SnackMessage(context,'Send OTP failed! try again',apiCallSuccess: false);
+      else {
+        if (mounted) {
+          SnackMessage(
+              context,controller.Message, apiCallSuccess: false);
+        }
       }
     }
   }
@@ -89,9 +86,17 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                   SizedBox(
                       height: 50,
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: getVerifyOTP,
-                        child: const Text("Verify"),
+                      child: GetBuilder<ForgetPasswordController>(
+                        builder: (controller) {
+                          return Visibility(
+                            visible:controller.LoginProgress==false,
+                            replacement:const Center(child: CircularProgressIndicator(),),
+                            child: ElevatedButton(
+                              onPressed: getVerifyOTP,
+                              child: const Text("Verify"),
+                            ),
+                          );
+                        }
                       )),
                   const SizedBox(
                     height: 30,
@@ -106,7 +111,7 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                         Get.back();
                         },
                         child: const Text('Sign In'),
                       ),

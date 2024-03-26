@@ -1,11 +1,8 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:rest_api_crud_1/data/models/user_model.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
+import 'package:rest_api_crud_1/ui/controllers/edit_profile_controller.dart';
 import 'package:rest_api_crud_1/ui/widgets/body_background.dart';
 import 'package:rest_api_crud_1/ui/widgets/profile_summary_card.dart';
 import 'package:rest_api_crud_1/ui/widgets/snack_message.dart';
@@ -26,18 +23,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _lastNameTEController = TextEditingController();
   final TextEditingController _mobileTEController = TextEditingController();
   final TextEditingController _passwordTEController = TextEditingController();
-
-  bool _updateProfileInProgress = false;
-
+  AuthController controller=Get.find<AuthController>();
+  // ignore: non_constant_identifier_names
+  EditProfileController Controller=Get.find<EditProfileController>();
   XFile? photo;
 
   @override
   void initState() {
     super.initState();
-    _emailTEController.text = AuthController.user?.email ?? '';
-    _firstNameTEController.text = AuthController.user?.firstName ?? '';
-    _lastNameTEController.text = AuthController.user?.lastName ?? '';
-    _mobileTEController.text = AuthController.user?.mobile ?? '';
+    _emailTEController.text = controller.user?.email ?? '';
+    _firstNameTEController.text = controller.user?.firstName ?? '';
+    _lastNameTEController.text = controller.user?.lastName ?? '';
+    _mobileTEController.text = controller.user?.mobile ?? '';
   }
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   @override
@@ -48,7 +45,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           key: _formKey,
           child: Column(
             children: [
-              ProfileSummaryCard(
+              const ProfileSummaryCard(
                 enableOnTap: false,
               ),
               Expanded(
@@ -145,16 +142,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           SizedBox(
                             width: double.infinity,
-                            child: Visibility(
-                              visible: _updateProfileInProgress == false,
-                              replacement: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                              child: ElevatedButton(
-                                onPressed: updateProfile,
-                                child:
-                                const Icon(Icons.arrow_circle_right_outlined),
-                              ),
+                            child: GetBuilder<EditProfileController>(
+                              builder: (controller) {
+                                return Visibility(
+                                  visible:controller.updateProfileProgress == false,
+                                  replacement: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  child: ElevatedButton(
+                                    onPressed:(){
+                                      updateProfile();
+                                      Get.find<AuthController>().getUserInformation();
+                                    },
+                                    child:
+                                    const Icon(Icons.arrow_circle_right_outlined),
+                                  ),
+                                );
+                              }
                             ),
                           )
                         ],
@@ -171,54 +175,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> updateProfile() async {
-    if (_formKey.currentState!.validate()) { // <-- Add the closing parenthesis here
-      _updateProfileInProgress = true;
-      if (mounted) {
-        setState(() {});
-      }
-      String? photoInBase64;
-      Map<String, dynamic> inputData = {
-        "firstName": _firstNameTEController.text.trim(),
-        "lastName" : _lastNameTEController.text.trim(),
-        "email" : _emailTEController.text.trim(),
-        "mobile": _mobileTEController.text.trim(),
-      };
-
-      if (_passwordTEController.text.isNotEmpty) {
-        inputData['password'] = _passwordTEController.text;
-      }
-
-      if (photo != null){
-        List<int> imageBytes = await photo!.readAsBytes();
-        photoInBase64 = base64Encode(imageBytes);
-        inputData['photo'] = photoInBase64;
-      }
-
-      final NetworkResponse response = await NetworkCaller().postRequest(
-        Urls.profileUpdate,
-        body: inputData,
+    if (_formKey.currentState!.validate()) {
+      bool response=await Controller.updateProfile(
+          _firstNameTEController.text.trim(),
+          _lastNameTEController.text.trim(),
+          _mobileTEController.text.trim(),
+          _emailTEController.text.trim(),
+          _passwordTEController.text.trim(),
+          photo!,
       );
-      _updateProfileInProgress = false;
-      if (mounted) {
-        setState(() {});
-      }
-      if (response.isSuccess) {
-        AuthController.updateUserInformation(UserModel(
-            email: _emailTEController.text.trim(),
-            firstName: _firstNameTEController.text.trim(),
-            lastName: _lastNameTEController.text.trim(),
-            mobile: _mobileTEController.text.trim(),
-            photo: photoInBase64 ?? AuthController.user?.photo
-        ));
+      if (response) {
         if (mounted) {
-          SnackMessage(context, 'Update profile success!');
+          SnackMessage(context,Controller.message);
         }
       } else {
         if (mounted) {
-          SnackMessage(context, 'Update profile failed. Try again.');
+          SnackMessage(context,Controller.message);
         }
       }
-    } // <-- Add this closing parenthesis
+    }
   }
   Container photoPickerField() {
     return Container(
@@ -246,25 +221,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           Expanded(
             flex: 3,
-            child: InkWell(
-              onTap: () async {
-                final XFile? image = await ImagePicker()
-                    .pickImage(source: ImageSource.camera, imageQuality: 50);
-                if (image != null) {
-                  photo = image;
-                  if (mounted) {
-                    setState(() {});
-                  }
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.only(left: 16),
-                child: Visibility(
-                  visible: photo == null,
-                  replacement: Text(photo?.name ?? ''),
-                  child: const Text('Select a photo'),
-                ),
-              ),
+            child: GetBuilder<EditProfileController>(
+              builder: (controller) {
+                return InkWell(
+                  onTap: () async {
+                    final XFile? image = await ImagePicker()
+                        .pickImage(source: ImageSource.camera, imageQuality: 50);
+                    if (image != null) {
+                      photo = image;
+                     controller.update();
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Visibility(
+                      visible: photo == null,
+                      replacement: Text(photo?.name ?? ''),
+                      child: const Text('Select a photo'),
+                    ),
+                  ),
+                );
+              }
             ),
           ),
         ],

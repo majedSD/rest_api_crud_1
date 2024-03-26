@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:rest_api_crud_1/ui/controllers/auth_controller.dart';
+import 'package:rest_api_crud_1/ui/controllers/edit_profile_controller.dart';
 import 'package:rest_api_crud_1/ui/screens/edit_profile_screen.dart';
 import 'package:rest_api_crud_1/ui/screens/login_screen.dart';
 
@@ -18,61 +20,51 @@ class ProfileSummaryCard extends StatefulWidget {
 }
 
 class _ProfileSummaryCardState extends State<ProfileSummaryCard> {
+  AuthController controller=Get.find<AuthController>();
   @override
   Widget build(BuildContext context) {
-    Uint8List? imageBytes;
-    try {
-      String? photoBase64 = AuthController.user?.photo;
-      if (photoBase64 != null && photoBase64.isNotEmpty) {
-        imageBytes = const Base64Decoder().convert(photoBase64);
-      }
-    } catch (e) {
-      // Handle error or invalid base64 string
-      print("Error decoding base64 image: $e");
-    }
-
-    return ListTile(
-      onTap: () {
-        if (widget.enableOnTap) {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => const EditProfileScreen()));
-        }
-      },
-      leading: CircleAvatar(
-        child: imageBytes == null
-            ? const Icon(Icons.person)
-            : ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: Image.memory(
-            imageBytes,
-            fit: BoxFit.cover,
+    return GetBuilder<AuthController>(
+      builder: (controller) {
+        return ListTile(
+          onTap: () {
+            if (widget.enableOnTap) {
+             Get.to(const EditProfileScreen());
+            }
+          },
+          leading: CircleAvatar(
+            child: controller.user?.photo != null
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.memory(
+                base64Decode(controller.user!.photo!),
+                fit: BoxFit.cover,
+              ),
+            )
+                : const Icon(Icons.person),
           ),
-        ),
-      ),
-      title: Text(
-        "${AuthController.user?.firstName} ${AuthController.user?.lastName}",
-        style: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      subtitle: Text(
-        "${AuthController.user?.email}",
-        style: const TextStyle(
-          color: Colors.black,
-        ),
-      ),
-      trailing: IconButton(
-        onPressed: () async {
-          await AuthController.clearAuthData();
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-                context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
-          }
-        },
-        icon: const Icon(Icons.logout),
-      ),
-      tileColor: Colors.cyanAccent,
+          title: Text(
+            "${controller.user?.firstName} ${controller.user?.lastName}",
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            "${controller.user?.email}",
+            style: const TextStyle(
+              color: Colors.black,
+            ),
+          ),
+          trailing: IconButton(
+            onPressed: () async {
+              await AuthController.clearAuthData();
+              Get.offAll(const LoginScreen());
+            },
+            icon: const Icon(Icons.logout),
+          ),
+          tileColor: Colors.cyanAccent,
+        );
+      }
     );
   }
 }

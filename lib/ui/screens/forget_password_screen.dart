@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
+import 'package:get/get.dart';
+import 'package:rest_api_crud_1/ui/controllers/forget_password_controller.dart';
 import 'package:rest_api_crud_1/ui/screens/pin_verification_screen.dart';
 import 'package:rest_api_crud_1/ui/widgets/body_background.dart';
 import 'package:rest_api_crud_1/ui/widgets/snack_message.dart';
@@ -15,26 +14,20 @@ class ForgetPasswordScreen extends StatefulWidget {
 
 class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
   final TextEditingController _emailTEController = TextEditingController();
+  ForgetPasswordController controller=Get.find<ForgetPasswordController>();
   Future<void> getVerifyEmail() async {
-    NetworkResponse response = await NetworkCaller()
-        .getRequest('${Urls.recoveryVerifyEmail}/${_emailTEController.text.trim()}');
-    if (response.isSuccess && response.jsonResponse['status']=='success') {
-      if (mounted) {
-        SnackMessage(context, 'Successfully Verified Email');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                PinVerificationScreen(
-                  email:_emailTEController.text.trim(),
-                ),
-          ),
-        );
+    bool response=await controller.getVerifyEmail(_emailTEController.text.trim());
+    if (response) {
+      if(mounted){
+        SnackMessage(context, controller.message);
       }
+      Get.to( PinVerificationScreen(
+        email:_emailTEController.text.trim(),
+      ),);
     }
     else{
-      if(mounted){
-        SnackMessage(context,'Email verification failed',apiCallSuccess: false);
+      if(mounted) {
+        SnackMessage(context, controller.message, apiCallSuccess: false);
       }
     }
   }
@@ -84,13 +77,21 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     SizedBox(
                       height: 50,
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            getVerifyEmail();
-                          }
-                        },
-                        child: const Icon(Icons.arrow_circle_right_outlined),
+                      child: GetBuilder<ForgetPasswordController>(
+                        builder: (controller) {
+                          return Visibility(
+                            visible:controller.loginProgress==false,
+                            replacement:const Center(child: CircularProgressIndicator(),),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  getVerifyEmail();
+                                }
+                              },
+                              child: const Icon(Icons.arrow_circle_right_outlined),
+                            ),
+                          );
+                        }
                       ),),
                     const SizedBox(
                       height: 30,
@@ -106,7 +107,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pop(context);
+                           Get.back();
                           },
                           child: const Text('Sign In'),
                         ),

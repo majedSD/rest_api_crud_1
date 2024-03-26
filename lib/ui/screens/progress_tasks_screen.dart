@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rest_api_crud_1/data/models/task_list_model.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
+import 'package:get/get.dart';
+import 'package:rest_api_crud_1/ui/controllers/progress_task_screen_controller.dart';
 
 import '../widgets/profile_summary_card.dart';
 import '../widgets/task_item_card.dart';
@@ -15,27 +13,13 @@ class ProgressTasksScreen extends StatefulWidget {
 }
 
 class _ProgressTasksScreenState extends State<ProgressTasksScreen> {
-  bool circularProgress=false;
+  ProgressTaskScreenController controller=Get.find<ProgressTaskScreenController>();
   @override
   void initState(){
     super.initState();
-    getTaskList();
+    controller.getTaskList();
   }
-  TaskListModel taskListModel=TaskListModel();
-  Future<void>getTaskList()async{
-    circularProgress=true;
-    if(mounted) {
-      setState(() {});
-    }
-    NetworkResponse response=await NetworkCaller().getRequest('${Urls.listTaskByStatus}/Progress');
-    if(response.statusCode==200){
-      taskListModel=TaskListModel.fromJson(response.jsonResponse);
-    }
-    circularProgress=false;
-    if(mounted){
-      setState(() {});
-    }
-  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,22 +28,26 @@ class _ProgressTasksScreenState extends State<ProgressTasksScreen> {
           children: [
             const ProfileSummaryCard(),
             Expanded(
-              child: Visibility(
-                visible:circularProgress==false,
-                replacement:const Center(child: CircularProgressIndicator(),),
-                child: RefreshIndicator(
-                  onRefresh: getTaskList,
-                  child: ListView.builder(
-                      itemCount: taskListModel.taskList?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        return TaskItemCard(
-                            task:taskListModel.taskList![index],
-                          callbackFunction: (){
-                              getTaskList();
-                          },
-                        );
-                      }),
-                ),
+              child: GetBuilder<ProgressTaskScreenController>(
+                builder: (controller) {
+                  return Visibility(
+                    visible:controller.circularProgress==false,
+                    replacement:const Center(child: CircularProgressIndicator(),),
+                    child: RefreshIndicator(
+                      onRefresh: controller.getTaskList,
+                      child: ListView.builder(
+                          itemCount: controller.taskListModel.taskList?.length ?? 0,
+                          itemBuilder: (context, index) {
+                            return TaskItemCard(
+                                task:controller.taskListModel.taskList![index],
+                              callbackFunction: (){
+                                  controller.getTaskList();
+                              },
+                            );
+                          }),
+                    ),
+                  );
+                }
               ),
             )
           ],

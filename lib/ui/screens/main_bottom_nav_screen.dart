@@ -28,6 +28,7 @@ class _MainBottomNavScreenState extends State<MainBottomNavScreen> {
         selectedItemColor: Colors.cyanAccent,
         unselectedItemColor: Colors.grey,
         currentIndex: _selectedIndex,
+        // ignore: non_constant_identifier_names
         onTap: (Index) {
           _selectedIndex = Index;
           setState(() {});

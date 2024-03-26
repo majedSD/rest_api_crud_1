@@ -1,10 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:rest_api_crud_1/data/models/user_model.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
-import 'package:rest_api_crud_1/ui/controllers/auth_controller.dart';
+import 'package:get/get.dart';
+import 'package:rest_api_crud_1/ui/controllers/login_controller.dart';
 import 'package:rest_api_crud_1/ui/screens/forget_password_screen.dart';
 import 'package:rest_api_crud_1/ui/screens/main_bottom_nav_screen.dart';
 import 'package:rest_api_crud_1/ui/screens/signup_screen.dart';
@@ -21,37 +18,28 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailTEController = TextEditingController();
   final TextEditingController _passwordTEController = TextEditingController();
+
   bool _obscureText = true;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _inProgress=false;
+  final LoginController _loginController=Get.find<LoginController>();
+
   Future<void>postLoginRequest()async{
     if(_formKey.currentState!.validate()){
-      _inProgress=true;
-      setState(() {});
-      NetworkResponse response=await NetworkCaller().postRequest(Urls.login,body: {
-        "email":_emailTEController.text.trim(),
-        "password":_passwordTEController.text.trim(),
-      },isLogin:true);
-      if(response.statusCode==200){
-        setState(() {});
-        AuthController.setUserInformation(response.jsonResponse['token'],UserModel.fromJson(response.jsonResponse['data']));
+    final bool response=await _loginController.postLoginRequest(
+        _emailTEController.text.trim(),
+        _passwordTEController.text.trim()
+    );
+      if(response){
         if(mounted) {
-          SnackMessage(
-              context, "Login Successfully completed");
+          SnackMessage(context, _loginController.message);
         }
-        if(mounted) {
-          Navigator.push(context, MaterialPageRoute(
-              builder: (
-                  context) => const MainBottomNavScreen()));
+       Get.to(const MainBottomNavScreen());
+      }
+      else {
+        if (mounted) {
+          SnackMessage(context, _loginController.message, apiCallSuccess: false);
         }
       }
-      else{
-        if(mounted) {
-          SnackMessage(context, "Login failed! try again",apiCallSuccess: false);
-        }
-      }
-      _inProgress=false;
-      setState(() {});
     }
   }
   @override
@@ -95,9 +83,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintText: "Password",
                         suffixIcon: InkWell(
                           onTap: () {
-                            setState(() {
                               _obscureText = !_obscureText;
-                            });
+                            setState(() {});
                           },
                           child: Icon(
                             _obscureText
@@ -115,15 +102,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(
                         height: 50,
                         width: double.infinity,
-                        child: Visibility(
-                          visible:_inProgress==false,
-                          replacement:const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                          child: ElevatedButton(
-                            onPressed:postLoginRequest,
-                            child: const Icon(Icons.arrow_circle_right_outlined),
-                          ),
+                        child: GetBuilder<LoginController>(
+                          builder: (loginController) {
+                            return Visibility(
+                              visible:loginController.loginProgress==false,
+                              replacement:const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              child: ElevatedButton(
+                                onPressed:postLoginRequest,
+                                child: const Icon(Icons.arrow_circle_right_outlined),
+                              ),
+                            );
+                          }
                         )),
                     const SizedBox(
                       height: 60,
@@ -131,11 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ForgetPasswordScreen()));
+                          Get.to( const ForgetPasswordScreen());
                         },
                         child: const Text(
                           "Forgot Password?",
@@ -157,11 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SignupScreen()));
+                           Get.to(const SignupScreen());
                           },
                           child: const Text('Sign up'),
                         ),

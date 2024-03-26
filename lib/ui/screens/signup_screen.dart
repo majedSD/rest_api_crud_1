@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
-import 'package:rest_api_crud_1/ui/controllers/auth_controller.dart';
+import 'package:get/get.dart';
+import 'package:rest_api_crud_1/ui/controllers/signup_screen_controller.dart';
 import 'package:rest_api_crud_1/ui/screens/login_screen.dart';
 import 'package:rest_api_crud_1/ui/widgets/body_background.dart';
 import 'package:rest_api_crud_1/ui/widgets/snack_message.dart';
@@ -21,10 +19,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _mobileTEController = TextEditingController();
   final TextEditingController _passwordTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _inProgress = false;
   bool apiCallSuccess = true;
   bool _obscureText = true;
-
+  SignUpScreenController controller=Get.find<SignUpScreenController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,17 +109,21 @@ class _SignupScreenState extends State<SignupScreen> {
                     SizedBox(
                         height: 50,
                         width: double.infinity,
-                        child: Visibility(
-                          visible: _inProgress == false,
-                          replacement: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              await _signUp(context);
-                            },
-                            child: const Icon(Icons.arrow_circle_right_outlined),
-                          ),
+                        child: GetBuilder<SignUpScreenController>(
+                          builder: (controller) {
+                            return Visibility(
+                              visible:controller.inProgress == false,
+                              replacement: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  await _signUp(context);
+                                },
+                                child: const Icon(Icons.arrow_circle_right_outlined),
+                              ),
+                            );
+                          }
                         ),),
                     const SizedBox(
                       height: 40,
@@ -138,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pop(context);
+                          Get.back();
                           },
                           child: const Text('Sign In'),
                         ),
@@ -156,44 +157,38 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _signUp(BuildContext context) async {
       if (_formKey.currentState!.validate()) {
-      _inProgress = true;
-      setState(() {});
-      final NetworkResponse response =
-      await NetworkCaller().postRequest(Urls.registration, body: {
-        "email": _emailTEController.text.trim(),
-        "firstName": _firstNameTEController.text.trim(),
-        "lastName": _lastNameTEController.text.trim(),
-        "mobile": _mobileTEController.text.trim(),
-        "password": _passwordTEController.text,
-        "photo": "",
-      });
-      _inProgress = false;
-      setState(() {});
-      if (response.statusCode == 200) {
-        if (mounted) {
-          SnackMessage(context, "Successfully SignUp go to login");
-          Navigator.pushAndRemoveUntil(context,MaterialPageRoute(builder:(context)=>const LoginScreen()), (route) => false);
-        }
+      final bool response=await controller.signUp(
+          _emailTEController.text.trim(),
+          _firstNameTEController.text.trim(),
+          _lastNameTEController.text.trim(),
+          _mobileTEController.text.trim(),
+          _passwordTEController.text.trim(),
+      );
+      if (response) {
+          // ignore: use_build_context_synchronously
+          SnackMessage(context,controller.message);
+          Get.offAll(const LoginScreen());
         _emailTEController.clear();
         _firstNameTEController.clear();
         _lastNameTEController.clear();
         _mobileTEController.clear();
         _passwordTEController.clear();
       } else {
-        if (mounted) {
-          SnackMessage(context, "Log in failed! please try again",
+        if(mounted) {
+          // ignore: use_build_context_synchronously
+          SnackMessage(context, controller.message,
               apiCallSuccess: false);
         }
       }
     }
   }
 
+  // ignore: non_constant_identifier_names
   InkWell PasswordVisibility() {
     return InkWell(
       onTap: () {
-        setState(() {
           _obscureText = !_obscureText;
-        });
+         setState(() {});
       },
       child: Icon(
         _obscureText ? Icons.visibility : Icons.visibility_off,
@@ -201,10 +196,12 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
+  // ignore: non_constant_identifier_names
   String? Validator(String? value) {
     if (value!.trim().isEmpty) {
       return "Enter a valid value";
     }
+    return null;
   }
 
   String? emailValidator(String? value) {

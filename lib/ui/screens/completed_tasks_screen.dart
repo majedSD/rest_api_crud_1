@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rest_api_crud_1/data/models/task_count_summary_list_model.dart';
-import 'package:rest_api_crud_1/data/models/task_list_model.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_caller.dart';
-import 'package:rest_api_crud_1/data/network_caller/network_response.dart';
-import 'package:rest_api_crud_1/data/utility/urls.dart';
+import 'package:get/get.dart';
+import 'package:rest_api_crud_1/ui/controllers/completed_task_screen_controller.dart';
 
 import '../widgets/profile_summary_card.dart';
 import '../widgets/task_item_card.dart';
@@ -16,27 +13,11 @@ class CompletedTasksScreen extends StatefulWidget {
 }
 
 class _CompletedTasksScreenState extends State<CompletedTasksScreen> {
-  bool circularProgress=false;
+  CompletedTaskScreenController controller=Get.find<CompletedTaskScreenController>();
   @override
   void initState(){
     super.initState();
-    getTaskList();
-  }
-  TaskListModel taskListModel=TaskListModel();
-  TaskCountSummaryListModel taskCountSummaryListModel=TaskCountSummaryListModel();
-  Future<void>getTaskList()async{
-    circularProgress=true;
-    if(mounted) {
-      setState(() {});
-    }
-    NetworkResponse response=await NetworkCaller().getRequest('${Urls.listTaskByStatus}/Complete');
-    if(response.statusCode==200){
-      taskListModel=TaskListModel.fromJson(response.jsonResponse);
-    }
-    circularProgress=false;
-    if(mounted){
-      setState(() {});
-    }
+    controller.getTaskList();
   }
   @override
   Widget build(BuildContext context) {
@@ -46,23 +27,27 @@ class _CompletedTasksScreenState extends State<CompletedTasksScreen> {
           children: [
             const ProfileSummaryCard(),
             Expanded(
-              child: Visibility(
-                visible:circularProgress==false,
-                replacement:const Center(child: CircularProgressIndicator(),),
-                child: RefreshIndicator(
-                  onRefresh: getTaskList,
-                  child: ListView.builder(
-                      itemCount: taskListModel.taskList?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        return TaskItemCard(
-                            task:taskListModel.taskList![index],
-                          callbackFunction: (){
-                              getTaskList();
-                          },
-                        );
+              child: GetBuilder<CompletedTaskScreenController>(
+                builder: (controller) {
+                  return Visibility(
+                    visible:controller.circularProgress==false,
+                    replacement:const Center(child: CircularProgressIndicator(),),
+                    child: RefreshIndicator(
+                      onRefresh: controller.getTaskList,
+                      child: ListView.builder(
+                          itemCount: controller.taskListModel.taskList?.length ?? 0,
+                          itemBuilder: (context, index) {
+                            return TaskItemCard(
+                                task:controller.taskListModel.taskList![index],
+                              callbackFunction: (){
+                                  controller.getTaskList();
+                              },
+                            );
 
-                      }),
-                ),
+                          }),
+                    ),
+                  );
+                }
               ),
             )
           ],
