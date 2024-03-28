@@ -1,9 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rest_api_crud_1/ui/controllers/auth_controller.dart';
-import 'package:rest_api_crud_1/ui/controllers/edit_profile_controller.dart';
 import 'package:rest_api_crud_1/ui/screens/edit_profile_screen.dart';
 import 'package:rest_api_crud_1/ui/screens/login_screen.dart';
 
